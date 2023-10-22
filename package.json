@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "https": "^1.0.0",
+    "npmlog": "^7.0.1",
+    "serialport": "^11.0.0"
+  }
+}
