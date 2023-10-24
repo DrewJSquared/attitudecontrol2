@@ -22,6 +22,7 @@ var tryingForAllData = false;
 const log = require('npmlog');
 const fs = require('fs');
 const https = require("https");
+var Moment = require('moment-timezone');
 
 
 
@@ -56,7 +57,9 @@ const AttitudeEngine = require('./AttitudeEngine2');
 AttitudeEngine.initialize(AttitudeSACN, config);
 AttitudeEngine.updateShowsPatch(showsPatch);
 
-setInterval(() => buildShowsPatch(), 5000); // even without internet we still need to buildShowsPatch to incorporate schedule every 5s
+AttitudeEngine.startEngine();
+
+setInterval(() => processSchedule(), 5000); // even without internet we still need to processSchedule to incorporate schedule every 5s
 
 
 
@@ -74,93 +77,196 @@ setInterval(() => buildShowsPatch(), 5000); // even without internet we still ne
 
 
 // build shows patch from schedule
-function buildShowsPatch() {
-	showsPatch = [];
+function processSchedule() {
+	// get current time in device config timezone
+	var timezoneString = config.devicemeta.timezone;
+	var currentTime = new Date(Moment().tz(timezoneString).format());
+	log.info('Schedule', 'Current time in ' + timezoneString + ' is ' + currentTime);
 
-	// get current time
-	var currentTime = new Date();
 
-	// console.log(currentTime);
-	// console.log('current hour ' + currentTime.getHours());
-
+	// if not assigned or no schedule, exit
 	if (typeof config.scheduleBlocks == 'undefined' || notAssignedToLocation) {
 		AttitudeEngine.stopEngine();
 		outputZerosToAllChannels();
 
+		log.info('Schedule', ' Not assigned to a location, no shows to play. (' + debugTimeString() + ')');
+
 		return;
 	}
 
+
 	// figure out what event block is currently active based on time and schedule
     var currentEventBlockId = 0;
+
+    // check each block on the schedule grid
     for (var s = 0; s < config.scheduleBlocks.length; s++) {
     	var thisBlock = config.scheduleBlocks[s];
+    	// if it applies to the current day
     	if (thisBlock.day == currentTime.getDay() + 1) {
+    		// if it's within the current time
     		if (thisBlock.start - 1 <= currentTime.getHours() && thisBlock.start - 1 + thisBlock.height > currentTime.getHours()) {
     			currentEventBlockId = thisBlock.eventBlockId;
-				log.notice('DEBUG', '     H ' + currentTime.getHours() + '  evntBlckId ' + currentEventBlockId + '  start ' + (thisBlock.start - 1) + '  end ' + (thisBlock.start - 1 + thisBlock.height));
+				// log.notice('DEBUG', '     H ' + currentTime.getHours() + '  evntBlckId ' + currentEventBlockId + '  start ' + (thisBlock.start - 1) + '  end ' + (thisBlock.start - 1 + thisBlock.height));
     		}
-    		// use minutes instead of hours
+
+    		// use minutes instead of hours, temp for debugging
     		// if (thisBlock.start - 1 <= (currentTime.getMinutes() - 20) && thisBlock.start - 1 + thisBlock.height > (currentTime.getMinutes() - 20)) {
     		// 	currentEventBlockId = thisBlock.eventBlockId;
     		// }
     	}
     }
 
-	// console.log('currentEventBlockId ' + currentEventBlockId);
 
-	// console.log('H ' + currentTime.getHours() + '  evntBlckId ' + currentEventBlockId);
 
-    // if any event block is active, build a showspatch : a list of shows that need to be run currently and the fixtures to run them on
+    // set up the showdata variable which holds what show plays on each zone/group
+    var showdata = [
+    	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
+
+    // if any event block is active, 
     if (currentEventBlockId > 0) {
     	// find the actual event block from the ID
-    	var currentEventBlock = config.eventBlocks.find(itm => itm.id == currentEventBlockId);
+    	showdata = JSON.parse(JSON.stringify(config.eventBlocks.find(itm => itm.id == currentEventBlockId).showdata));
 
-    	// loop through each zone in the patch
-    	for (var z = 0; z < config.patch.zonesList.length; z++) {
-    		if (currentEventBlock.showdata[z].length > 0) {
-    			// groups in this zone are set to run separate shows
-    			for (var g = 0; g < config.patch.zonesList[z].groups.length; g++) {
-    				var fixturesInThisGroup = config.patch.fixturesList.filter(function (itm) {
-    					return (itm.zoneNumber == z+1 && itm.groupNumber == g+1);
-    				});
-	    			if (fixturesInThisGroup.length < 1) { continue; }
+    	// pull the shows in that block to the currently active showdata variable
+    	for (var i = showdata.length; i < 10; i++) {
+    		showdata[i] = 0;
+    	}
+    }
 
-	    			var thisShowId = currentEventBlock.showdata[z][g];
-	    			if (thisShowId < 1) { continue; }
+    // log the current showdata variable (which includes the shows from the current scheduled block only)
+    // console.log('- showdata pre custom');
+    // console.log(showdata);
 
-	    			var newShowBlock = {
-    					counter: 0,
-			    		show: findShowById(thisShowId),
-			    		fixtures: createEnginePatchFromFixturesList(fixturesInThisGroup),
-			    	}
 
-			    	showsPatch.push(newShowBlock);
+
+    // now check each Custom Show Schedule block
+    for (var c = 0; c < config.customBlocks.length; c++) {
+    	var thisBlock = config.customBlocks[c];
+
+    	// if this block is on today
+    	if (thisBlock.month == currentTime.getMonth() + 1 && thisBlock.day == currentTime.getDate()) {
+    		var currentTimeNumber = (currentTime.getHours() * 60) + currentTime.getMinutes();
+    		var thisBlockStartNumber = (thisBlock.startHour * 60) + thisBlock.startMinute;
+    		var thisBlockEndNumber = (thisBlock.endHour * 60) + thisBlock.endMinute;
+
+    		// if the current time is within this block
+    		if (currentTimeNumber >= thisBlockStartNumber && currentTimeNumber < thisBlockEndNumber) {
+    			// go thru each zone of the showdata for this block and update the main showData variable
+    			for (var z = 0; z < thisBlock.showdata.length; z++) {
+    				// check if there are groups in this override
+					if (thisBlock.showdata[z].length > 0) {
+						// grab the show currently scheduled on this zone/groups. we need to apply it to any groups not being overriden
+						var oldZoneData = JSON.parse(JSON.stringify(showdata[z]));
+
+						// if the override is set to use groups, then add groups to showdata even if there werent groups previously
+						if (thisBlock.showdata[z].length > 1) {
+							showdata[z] = [];
+						}
+
+						// loop through each group
+						for (var g = 0; g < thisBlock.showdata[z].length; g++) {
+							if (thisBlock.showdata[z][g] > 0) {
+								// this group IS set to override, so apply the new override show to this group
+								showdata[z][g] = JSON.parse(JSON.stringify(thisBlock.showdata[z][g]));
+							} else {
+								// group is set to NO CHANGE, so check what show was previously scheduled per oldZoneData variable
+								if (oldZoneData.length > 1) {
+									// groups were on unique shows so check what this particular group was set to
+									showdata[z][g] = oldZoneData[g];
+								} else {
+									// in this case, only one show was sccheduled for the whole zone so use that
+									showdata[z][g] = oldZoneData;
+								}
+							}
+						}
+
+						// log the new showdata for this zone
+						// console.log(showdata[z])
+					} else if (thisBlock.showdata[z] > 0) {
+						// else override needs to run on the whole zone not just the groups
+						showdata[z] = JSON.parse(JSON.stringify(thisBlock.showdata[z]));
+
+						// log that this override is a single and will run on whole zone
+						// console.log('custom is single ' + thisBlock.showdata[z])
+					}
     			}
-    		} else {
-    			// no groups in this zone or all groups are set to run SINGLE show
-    			var fixturesInThisZone = config.patch.fixturesList.filter(itm => itm.zoneNumber == z+1);
-    			if (fixturesInThisZone.length < 1) { continue; }
+    		}
+    	}
+    }
 
-    			var thisShowId = currentEventBlock.showdata[z];
+
+
+    // log the current showdata after processing overrides
+    log.info('Schedule', 'Processed schedule. Currently playing shows: ' + JSON.stringify(showdata));
+    // console.log('- showdata after overrides');
+    // console.log(showdata);
+
+    // do a JSON copy of showdata to make sure nothing is referenced but instead pure copied. Not sure if this is strictly necesary.
+    var finalShowData = JSON.parse(JSON.stringify(showdata));
+
+    // log finalShowData variable after copy
+    // console.log('- finalShowData:');
+    // console.log(finalShowData);
+
+
+
+    // finally, build a showspatch - a list of shows that need to be run currently and the fixtures to run them on
+    showsPatch = [];
+
+	// loop through each zone in the patch
+	for (var z = 0; z < config.patch.zonesList.length; z++) {
+		if (finalShowData[z].length > 0) {
+			// groups in this zone are set to run separate shows
+			for (var g = 0; g < config.patch.zonesList[z].groups.length; g++) {
+				var fixturesInThisGroup = config.patch.fixturesList.filter(function (itm) {
+					return (itm.zoneNumber == z+1 && itm.groupNumber == g+1);
+				});
+    			if (fixturesInThisGroup.length < 1) { continue; }
+
+    			var thisShowId = finalShowData[z][g];
     			if (thisShowId < 1) { continue; }
 
     			var newShowBlock = {
-    				counter: 0,
+					counter: 0,
 		    		show: findShowById(thisShowId),
-		    		fixtures: createEnginePatchFromFixturesList(fixturesInThisZone),
+		    		fixtures: createEnginePatchFromFixturesList(fixturesInThisGroup),
 		    	}
 
 		    	showsPatch.push(newShowBlock);
-    		}
-    	}
+			}
+		} else {
+			// no groups in this zone or all groups are set to run SINGLE show
+			var fixturesInThisZone = config.patch.fixturesList.filter(itm => itm.zoneNumber == z+1);
+			if (fixturesInThisZone.length < 1) { continue; }
 
-    	AttitudeEngine.updateShowsPatch(showsPatch);
-    	AttitudeEngine.ensureEngineIsRunning();
-    } else {
-    	// else no event blocks are active, so blackout all channels
-    	AttitudeEngine.stopEngine();
-		outputZerosToAllChannels();
-    }
+			var thisShowId = finalShowData[z];
+			if (thisShowId < 1) { continue; }
+
+			var newShowBlock = {
+				counter: 0,
+	    		show: findShowById(thisShowId),
+	    		fixtures: createEnginePatchFromFixturesList(fixturesInThisZone),
+	    	}
+
+	    	showsPatch.push(newShowBlock);
+		}
+	}
+
+
+	// log final showspatch
+	// console.log(' -------- showsPatch ------- ' + JSON.stringify(showsPatch).length);
+	// console.log(showsPatch);
+
+
+	// log.info showsPatch data
+	// for (var i = 0; i < showsPatch.length; i++) {
+	// 	log.info('showsPatch', showsPatch[i].fixtures.length + ' fixtures playing show ' + JSON.stringify(showsPatch[i].show));
+	// }
+
+
+	// send showspatch data to engine for shows to be processed and spit out to DMX
+	AttitudeEngine.updateShowsPatch(showsPatch);
 }
 
 
@@ -293,7 +399,7 @@ function getData(allData = false) {
 
 // parseNewHTTPSData - process new data downloaded from server
 function parseNewHTTPSData(data) {
-	log.http('SERVER', 'Connected to attitude.lighting server!');
+	log.http('SERVER', 'Connected to attitude.lighting server! (' + debugTimeString() + ')');
 
 	if (data == 'Unassigned') {
 		// log.info('SERVER', '============ UNASSIGNED ============');
@@ -343,7 +449,7 @@ function parseNewHTTPSData(data) {
 		}
 	}
 
-	buildShowsPatch();
+	processSchedule();
 }
 
 
@@ -470,3 +576,25 @@ function tryParseJSONObject(jsonString) {
 
     return false;
 };
+
+function debugTimeString() {
+	var date = new Date();
+
+	if (typeof config.devicemeta !== 'undefined') {
+		if (typeof config.devicemeta.timezone !== 'undefined') {
+			var timezoneString = config.devicemeta.timezone;
+			date = new Date(Moment().tz(timezoneString).format());
+		}
+	}
+
+	return ("00" + (date.getMonth() + 1)).slice(-2) + "/" +
+				("00" + date.getDate()).slice(-2) + "/" +
+				date.getFullYear() + " " +
+				("00" + date.getHours()).slice(-2) + ":" +
+				("00" + date.getMinutes()).slice(-2) + ":" +
+				("00" + date.getSeconds()).slice(-2);
+}
+
+function fullDebugTimeString() {
+	return ' --- ' + debugTimeString() + ' --- ';
+}
