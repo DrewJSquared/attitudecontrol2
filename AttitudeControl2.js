@@ -67,7 +67,7 @@ setInterval(() => processSchedule(), 5000); // even without internet we still ne
 // ==================== INIT ATTITUDE LED ====================
 const AttitudeLED = require('./AttitudeLED2');
 AttitudeLED.initialize();
-AttitudeLED.setColor('B');
+AttitudeLED.setColor('B'); // a = full color, b = purple for no network
 
 
 

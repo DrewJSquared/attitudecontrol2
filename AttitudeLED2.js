@@ -33,7 +33,7 @@ const port = new SerialPort({ path: portPath, baudRate: 115200, autoOpen: false,
 
 // Port error callbacks
 port.on('error', function(err) { 
-	log.error('LED', err.message);
+	log.error('AttitudeLED', err.message);
 });
 
 
@@ -68,12 +68,12 @@ function initialize() {
 
 			log.error('AttitudeLED', ' --- ' + new Date().toLocaleTimeString() + ' ---  err on open in init func')
 		} else {
-			log.info('AttitudeLED', ' Connected to Raspberry Pi Pico. ');
+			log.info('AttitudeLED', 'Connected to Raspberry Pi Pico. ');
 
 			// write color as soon as we r done
 			port.write(color, function(err) {
 				if (port.isOpen) {
-					if (err) return log.error('DMX', 'Error on write: ', err.message);
+					if (err) return log.error('AttitudeLED', 'Error on write: ', err.message);
 				}
 			});
 		}
@@ -83,7 +83,9 @@ function initialize() {
 		if (port.isOpen) {
 			port.write(color, function(err) {
 				if (port.isOpen) {
-					if (err) return log.error('DMX', 'Error on write: ', err.message);
+					if (err) {
+						log.error('AttitudeLED', 'Error on write: ', err.message);
+					}
 				}
 			});
 		} else {
