@@ -64,6 +64,13 @@ setInterval(() => processSchedule(), 5000); // even without internet we still ne
 
 
 
+// ==================== INIT ATTITUDE LED ====================
+const AttitudeLED = require('./AttitudeLED2');
+AttitudeLED.initialize();
+AttitudeLED.setColor('B');
+
+
+
 
 
 
@@ -367,7 +374,7 @@ function getData(allData = false) {
 	if (allData || tryingForAllData) {
 		type = '/data';
 		tryingForAllData = true;
-		console.log('+++++  TRYING FOR ALL DATA: ' + tryingForAllData);
+		log.info('HTTPS', 'Attempting to load a fresh set of data from the attitude.lighting server.')
 	}
 
 	https.get(url + DEVICE_ID + type, resp => {
@@ -382,30 +389,28 @@ function getData(allData = false) {
 		resp.on("end", () => {
 
 			if (data.length > 5 && tryingForAllData) {
-				console.log('+++++  TRYING FOR ALL DATA: ' + tryingForAllData + '  && LENGTH = ' + data.length);
-
-				
 				tryingForAllData = false;
-				console.log(' ======= ==== RESET TRYING  ======= ==== ');
+
+				log.info('HTTPS', 'Successfully pulled a complete fresh set of data from the attitude.lighting server.')
 			}
 			parseNewHTTPSData(data);
 		});
 	}).on("error", err => {
 		log.error('HTTPS', 'Error: ' + err.message);
-		// AttitudeDMX.setNetworkStatus(false);
+		AttitudeLED.setColor('B');
 	});
 }
 
 
 // parseNewHTTPSData - process new data downloaded from server
 function parseNewHTTPSData(data) {
-	log.http('SERVER', 'Connected to attitude.lighting server! (' + debugTimeString() + ')');
+	log.http('Server', 'Connected to attitude.lighting server! (' + debugTimeString() + ')');
 
 	if (data == 'Unassigned') {
 		// log.info('SERVER', '============ UNASSIGNED ============');
 
 		saveConfigToJSON();
-		// AttitudeDMX.setNetworkStatus(true);
+		AttitudeLED.setColor('A');
 
 		AttitudeEngine.stopEngine();
 		outputZerosToAllChannels();
@@ -435,7 +440,7 @@ function parseNewHTTPSData(data) {
 
 	saveConfigToJSON();
 
-	// AttitudeDMX.setNetworkStatus(true);
+	AttitudeLED.setColor('A');
 
 	// reboot device if command received from server
 	if (typeof newData.devicemeta !== 'undefined') {
