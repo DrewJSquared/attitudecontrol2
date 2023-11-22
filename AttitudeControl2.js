@@ -72,6 +72,14 @@ AttitudeLED.setColor('B'); // a = full color, b = purple for no network
 
 
 
+// ==================== INIT ATTITUDE SENSE ====================
+const AttitudeSense = require('./AttitudeSense');
+AttitudeSense.initialize();
+
+
+
+
+
 
 
 
