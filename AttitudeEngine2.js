@@ -372,6 +372,18 @@ function engine() {
 			if (config.devicemeta.port4 == thisFixture.universe) {
 				outputFixtureToDMX(4, thisFixture);
 			}
+			if (config.devicemeta.port5 == thisFixture.universe) {
+				outputFixtureToDMX(5, thisFixture);
+			}
+			if (config.devicemeta.port6 == thisFixture.universe) {
+				outputFixtureToDMX(6, thisFixture);
+			}
+			if (config.devicemeta.port7 == thisFixture.universe) {
+				outputFixtureToDMX(7, thisFixture);
+			}
+			if (config.devicemeta.port8 == thisFixture.universe) {
+				outputFixtureToDMX(8, thisFixture);
+			}
 		}
 
 

@@ -43,7 +43,7 @@ initializeHTTPSConnection();
 
 // ==================== INIT ATTITUDE DMX ====================
 const AttitudeSACN = require('./AttitudeSACN2');
-AttitudeSACN.initialize(4);  // default to 4 universes for now
+AttitudeSACN.initialize(8);
 
 // default to black
 outputZerosToAllChannels();
