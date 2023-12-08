@@ -247,6 +247,8 @@ function processSchedule() {
     		var foundIndex = config.overrides.findIndex(obj => obj.id == thisSense.data[p].override_id);
 			if (foundIndex >= 0) {
 				thisOverride = JSON.parse(JSON.stringify(config.overrides[foundIndex]));
+			} else {
+				continue;
 			}
 
 
