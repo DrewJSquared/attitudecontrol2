@@ -26,7 +26,7 @@ module.exports = {
 		client.on('message',function(msg,info){
 			var messageString = msg.toString();
 			var object = JSON.parse(messageString);
-			// console.log(object);
+			console.log(object);
 
 			// keep a running array of each unique unit with the most up to date packet received from it
 			var foundIndex = senses.findIndex(obj => obj.ID == object.ID);
