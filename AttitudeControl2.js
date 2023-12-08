@@ -59,7 +59,7 @@ AttitudeEngine.updateShowsPatch(showsPatch);
 
 AttitudeEngine.startEngine();
 
-setInterval(() => processSchedule(), 5000); // even without internet we still need to processSchedule to incorporate schedule every 5s
+setInterval(() => processSchedule(), 1000); // always process schedule every 1 second regardless of internet or not
 
 
 
@@ -68,6 +68,14 @@ setInterval(() => processSchedule(), 5000); // even without internet we still ne
 const AttitudeLED = require('./AttitudeLED2');
 AttitudeLED.initialize();
 AttitudeLED.setColor('B'); // a = full color, b = purple for no network
+
+
+
+
+// ==================== INIT ATTITUDE SENSE ====================
+const AttitudeSense = require('./AttitudeSense');
+AttitudeSense.initialize();
+
 
 
 
@@ -204,8 +212,87 @@ function processSchedule() {
 
 
 
-    // log the current showdata after processing overrides
-    log.info('Schedule', 'Processed schedule. Currently playing shows: ' + JSON.stringify(showdata));
+    // log the current showdata after processing custom show schedule
+    log.info('Schedule', 'Processed weekly & custom show schedule. Shows: ' + JSON.stringify(showdata));
+
+
+
+
+    // NOW it's finally time to incoroporate overrides
+    console.log(' ^^^^^^^ OVERRIDES ^^^^^^^^^ ');
+
+    // console.log(config.senses);
+
+    // console.log(AttitudeSense.getSenseData(1));
+
+    // loop through each sense
+    for (var s = 0; s < config.senses.length; s++) {
+    	var thisSense = config.senses[s];
+    	var thisSenseCurrentData = AttitudeSense.getSenseData(thisSense.id);
+
+    	if (thisSenseCurrentData == undefined) { 
+    		log.error('Attitude Sense', 'Attitude Sense ' + thisSense.serialnumber + ' is assigned to this location but not connected! No data received :(')
+    		continue; 
+    	}
+
+    	var thisSensePortsArray = JSON.parse('[' + thisSenseCurrentData.DATA + ']');
+
+    	for (var p = 0; p < 16; p++) {
+    		console.log(thisSense.data[p]);
+
+
+
+    		// find the override object associated with this port
+    		var thisOverride = undefined;
+    		var foundIndex = config.overrides.findIndex(obj => obj.id == thisSense.data[p].override_id);
+			if (foundIndex >= 0) {
+				thisOverride = JSON.parse(JSON.stringify(config.overrides[foundIndex]));
+			}
+
+
+			// check the port mode, different behavior for toggle vs pulse
+    		if (thisSense.data[p].mode == 'toggle') {
+    			if (thisSensePortsArray[p] == 1) {
+    				// console.log('RUN OVERRIDE');
+
+    				// update showdata by layering in data from override showsdata
+    				showdata = layerAnOverride(showdata, JSON.parse(thisOverride.showsdata));
+    			} else {
+    				// console.log('NO OVERRIDE');
+    			}
+    		} else if (thisSense.data[p].mode == 'pulse') {
+    			// console.log('PULSE');
+    		}
+
+    	}
+
+    	console.log(thisSensePortsArray);
+    	// console.log(thisSense.data);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // console.log('- showdata after overrides');
     // console.log(showdata);
 
@@ -321,6 +408,46 @@ function createEnginePatchFromFixturesList(fixturesList) {
 	}
 
 	return resultList;
+}
+
+
+
+function layerAnOverride(base, layer) {
+	var final = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+	// go thru each zone of the base and update final
+	for (var z = 0; z < base.length; z++) {
+		// check if there are groups in this zone of the layer
+		if (layer[z].length > 0) {
+			// grab the show currently scheduled on this zone/groups. we need to apply it to any groups not being overriden
+			var oldZoneData = JSON.parse(JSON.stringify(base[z]));
+
+			// since the override is set to use groups, then add groups to the final since there werent groups previously
+			final[z] = [];
+
+			// loop through each group
+			for (var g = 0; g < layer[z].length; g++) {
+				if (layer[z][g] > 0) {
+					// this group IS set to override (since new layer[z][g] > 0), so apply the new override show to this group
+					final[z][g] = JSON.parse(JSON.stringify(layer[z][g]));
+				} else {
+					// group is set to NO CHANGE, so check what show was previously scheduled per oldZoneData variable
+					if (oldZoneData.length > 1) {
+						// groups were on unique shows so check what this particular group was set to
+						final[z][g] = JSON.parse(JSON.stringify(oldZoneData[g]));
+					} else {
+						// in this case, only one show was sccheduled for the whole zone so use that
+						final[z][g] = JSON.parse(JSON.stringify(oldZoneData));
+					}
+				}
+			}
+		// else new layer needs to run on the whole zone not just the groups
+		} else if (layer[z] > 0) {
+			final[z] = JSON.parse(JSON.stringify(layer[z]));
+		}
+	}
+
+	return final;
 }
 
 
@@ -454,7 +581,7 @@ function parseNewHTTPSData(data) {
 		}
 	}
 
-	processSchedule();
+	// processSchedule(); // removed this here because process schedule is called in 1 second interval earlier
 }
 
 
