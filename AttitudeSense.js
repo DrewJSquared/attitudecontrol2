@@ -8,7 +8,7 @@ var log = require('npmlog');
 var dgram = require('dgram');
 const https = require("https");
 
-
+var senses = [];
 
 
 
@@ -26,11 +26,15 @@ module.exports = {
 		client.on('message',function(msg,info){
 			var messageString = msg.toString();
 			var object = JSON.parse(messageString);
-			console.log(object);
+			// console.log(object);
 
-
-
-
+			// keep a running array of each unique unit with the most up to date packet received from it
+			var foundIndex = senses.findIndex(obj => obj.ID == object.ID);
+			if (foundIndex >= 0) {
+				senses[foundIndex] = JSON.parse(JSON.stringify(object));
+			} else {
+				senses.push(JSON.parse(JSON.stringify(object)));
+			}
 
 			var SENSE_ID = object.ID;
 
@@ -43,7 +47,7 @@ module.exports = {
 
 			var finalUrl = url + SENSE_ID + type + '[' + object.DATA + ']';
 
-			console.log(finalUrl);
+			// console.log(finalUrl);
 
 			// actually send to server via HTTPS get
 			https.get(finalUrl, resp => {
@@ -67,6 +71,15 @@ module.exports = {
 		});
 
 		log.info('Attitude Sense', 'System initialized, now listening for communications from Attitude Sense devices.');
+	},
+
+	getSenseData: function (id) {
+		var foundIndex = senses.findIndex(obj => obj.ID == id);
+		if (foundIndex >= 0) {
+			return JSON.parse(JSON.stringify(senses[foundIndex]));
+		} else {
+			return undefined;
+		}
 	},
 };
 
