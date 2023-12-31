@@ -35,7 +35,9 @@ log.info('INIT', 'System initializing at time ' + new Date().toLocaleTimeString(
 
 console.log(' --- ' + new Date().toLocaleTimeString() + ' ---  Init Attitude Control Device Firmware (2nd gen) ...');
 
-console.log(' +-+-+ UPDATED CODE HELLO WORLD :) +-+-+ ')
+setInterval(function () {
+	console.log(' updated again, hello world :) ')
+}, 2000);
 
 loadDeviceID();
 loadConfigFromJSON();
