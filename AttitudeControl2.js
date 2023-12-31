@@ -98,7 +98,7 @@ function processSchedule() {
 	var timezoneString = config.devicemeta.timezone;
 	var local = DateTime.local();
 	var rezoned = local.setZone(timezoneString);
-	log.info('Schedule', 'Current time in ' + timezoneString + ' is ' + rezoned.toFormat("ccc LLL d yyyy H:mm:ss 'GMT'ZZ (ZZZZZ)"));
+	log.info('Schedule', 'Current time (rezoned) in ' + timezoneString + ' is ' + rezoned.toFormat("ccc LLL d yyyy H:mm:ss 'GMT'ZZ (ZZZZZ)"));
 
 
 	// if not assigned or no schedule, exit
@@ -575,7 +575,7 @@ function parseNewHTTPSData(data) {
 
 	// reboot device if command received from server
 	if (typeof newData.devicemeta !== 'undefined') {
-		if (newData.devicemeta.reboot == true || false) {
+		if (newData.devicemeta.update == true || false) {
 			console.log('+++++ RUN MANUAL UPDATE NOW +++++');
 			require('child_process').exec('cd ~/Documents/attitude && node manualupdate2.js', function (msg) { console.log(msg) });
 		} else if (newData.devicemeta.reboot == true || false) {
