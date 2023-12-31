@@ -35,6 +35,8 @@ log.info('INIT', 'System initializing at time ' + new Date().toLocaleTimeString(
 
 console.log(' --- ' + new Date().toLocaleTimeString() + ' ---  Init Attitude Control Device Firmware (2nd gen) ...');
 
+console.log(' +-+-+ UPDATED CODE HELLO WORLD :) +-+-+ ')
+
 loadDeviceID();
 loadConfigFromJSON();
 initializeHTTPSConnection();
@@ -577,7 +579,7 @@ function parseNewHTTPSData(data) {
 	if (typeof newData.devicemeta !== 'undefined') {
 		if (newData.devicemeta.update == true || false) {
 			console.log('+++++ RUN MANUAL UPDATE NOW +++++');
-			require('child_process').exec('cd ~/Documents/attitude && node manualupdate2.js', function (msg) { console.log(msg) });
+			require('child_process').exec('cd ~/Documents/attitude && node manualupdate2.js && pm2 restart 0', function (msg) { console.log(msg) });
 		} else if (newData.devicemeta.reboot == true || false) {
 			console.log('+++++ REBOOT & DELETE CONFIG FILE +++++');
 			fs.rmSync('config.json', { recursive: true, force: true });
