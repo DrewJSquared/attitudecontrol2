@@ -23,6 +23,7 @@ const log = require('npmlog');
 const fs = require('fs');
 const https = require("https");
 var Moment = require('moment-timezone');
+const { DateTime } = require("luxon");
 
 
 
@@ -95,8 +96,9 @@ AttitudeSense.initialize();
 function processSchedule() {
 	// get current time in device config timezone
 	var timezoneString = config.devicemeta.timezone;
-	var currentTime = new Date(Moment().tz(timezoneString).format());
-	log.info('Schedule', 'Current time in ' + timezoneString + ' is ' + currentTime);
+	var local = DateTime.local();
+	var rezoned = local.setZone(timezoneString);
+	log.info('Schedule', 'Current time in ' + timezoneString + ' is ' + rezoned.toFormat("ccc LLL d yyyy H:mm:ss 'GMT'ZZ (ZZZZZ)"));
 
 
 	// if not assigned or no schedule, exit
@@ -117,11 +119,11 @@ function processSchedule() {
     for (var s = 0; s < config.scheduleBlocks.length; s++) {
     	var thisBlock = config.scheduleBlocks[s];
     	// if it applies to the current day
-    	if (thisBlock.day == currentTime.getDay() + 1) {
+    	if (thisBlock.day == offsetWeekdayForLuxon(rezoned.weekday)) {
     		// if it's within the current time
-    		if (thisBlock.start - 1 <= currentTime.getHours() && thisBlock.start - 1 + thisBlock.height > currentTime.getHours()) {
+    		if (thisBlock.start - 1 <= rezoned.hour && thisBlock.start - 1 + thisBlock.height > rezoned.hour) {
     			currentEventBlockId = thisBlock.eventBlockId;
-				// log.notice('DEBUG', '     H ' + currentTime.getHours() + '  evntBlckId ' + currentEventBlockId + '  start ' + (thisBlock.start - 1) + '  end ' + (thisBlock.start - 1 + thisBlock.height));
+				// log.notice('DEBUG', '     H ' + rezoned.hour + '  evntBlckId ' + currentEventBlockId + '  start ' + (thisBlock.start - 1) + '  end ' + (thisBlock.start - 1 + thisBlock.height));
     		}
 
     		// use minutes instead of hours, temp for debugging
@@ -160,8 +162,8 @@ function processSchedule() {
     	var thisBlock = config.customBlocks[c];
 
     	// if this block is on today
-    	if (thisBlock.month == currentTime.getMonth() + 1 && thisBlock.day == currentTime.getDate()) {
-    		var currentTimeNumber = (currentTime.getHours() * 60) + currentTime.getMinutes();
+    	if (thisBlock.month == rezoned.month + 1 && thisBlock.day == offsetWeekdayForLuxon(rezoned.weekday)) {
+    		var currentTimeNumber = (rezoned.hour * 60) + rezoned.minute;
     		var thisBlockStartNumber = (thisBlock.startHour * 60) + thisBlock.startMinute;
     		var thisBlockEndNumber = (thisBlock.endHour * 60) + thisBlock.endMinute;
 
@@ -734,4 +736,9 @@ function debugTimeString() {
 
 function fullDebugTimeString() {
 	return ' --- ' + debugTimeString() + ' --- ';
+}
+
+
+function offsetWeekdayForLuxon(luxonWeekday) {
+	return (luxonWeekday % 7 + 1);
 }
