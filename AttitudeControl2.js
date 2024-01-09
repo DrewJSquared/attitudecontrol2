@@ -8,7 +8,7 @@
 var DEVICE_ID = 0;
 var SERIALNUMBER = 'AC-00100XX';
 const LAPTOP_MODE = (process.platform == 'darwin');
-const SERVER_PING_INTERVAL = 500;
+const SERVER_PING_INTERVAL = 1000;
 var config = {};
 var showsPatch = [];
 var notAssignedToLocation = false;
