@@ -54,7 +54,8 @@ module.exports = {
 
 		log.info('Attitude sACN', 'Initializing with ' + UNIVERSES + ' universes at a ' + DMX_INTERVAL_SPEED + 'ms interval...');
 
-		for (var i = 0; i < UNIVERSES; i++) {
+		// set up all universes
+		for (var i = 0; i < UNIVERSES + 1; i++) {
 			clients[i] = new e131.Client(i+1);
 			packets[i] = clients[i].createPacket(512);
 			slotsDatas[i] = packets[i].getSlotsData();
@@ -65,15 +66,26 @@ module.exports = {
 			packets[i].setPriority(packets[i].DEFAULT_PRIORITY);
 		}
 
+		// set all packets in last universe + 1 to white
+		for (var c = 0; c < 512; c++) {
+			slotsDatas[UNIVERSES][c] = 255;
+		}
+
+		// set up DMX interval for sending packets out via client.send()
 		dmxIntervalActive = true;
 		dmxinterval = setInterval(() => {
 			fps++;
+
+			// send regular universes
 			for (var u = 0; u < UNIVERSES; u++) {
 				// send over sACN
 				clients[u].send(packets[u], function () {
 					// sent callback
 				});
 			}
+
+			// send universe 9 (aka universe count + 1) of sACN as permenantly white
+			clients[UNIVERSES].send(packets[u]);
 		}, DMX_INTERVAL_SPEED);
 
 		log.info('Attitude sACN', 'System initialized, now outputting DMX over sACN.');

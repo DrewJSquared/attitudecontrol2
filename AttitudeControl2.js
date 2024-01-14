@@ -1,6 +1,6 @@
 // AttitudeControl2.js
 // primary JS app for Attitude Control firmware (2nd gen)
-// copyright 2023 Drew Shipps, J Squared Systems
+// copyright 2024 Drew Shipps, J Squared Systems
 
 
 
@@ -30,7 +30,7 @@ const { DateTime } = require("luxon");
 
 // ==================== INITIALIZE ====================
 log.info('INIT', 'Attitude Control Device Firmware (2nd gen)');
-log.info('INIT', 'Copyright 2023 Drew Shipps, J Squared Systems');
+log.info('INIT', 'Copyright 2024 Drew Shipps, J Squared Systems');
 log.info('INIT', 'System initializing at time ' + new Date().toLocaleTimeString());
 
 console.log(' --- ' + new Date().toLocaleTimeString() + ' ---  Init Attitude Control Device Firmware (2nd gen) ...');
@@ -574,19 +574,22 @@ function parseNewHTTPSData(data) {
 	AttitudeLED.setColor('A');
 
 	// reboot device if command received from server
-	if (typeof newData.devicemeta !== 'undefined') {
-		if (newData.devicemeta.update == true || false) {
-			console.log('+++++ RUN MANUAL UPDATE NOW +++++');
-			require('child_process').exec('cd ~/Documents/attitude && node manualupdate2.js && pm2 restart 0', function (msg) { console.log(msg) });
-		} else if (newData.devicemeta.reboot == true || false) {
-			console.log('+++++ REBOOT & DELETE CONFIG FILE +++++');
-			fs.rmSync('config.json', { recursive: true, force: true });
+	
+	//  !! FUNCTIONALITY REMOVED, MIGRATED TO REBOOT.JS FILE !!
 
-			if (!LAPTOP_MODE) {
-				require('child_process').exec('sudo /sbin/shutdown now', function (msg) { console.log(msg) });
-			}
-		}
-	}
+	// if (typeof newData.devicemeta !== 'undefined') {
+	// 	if (newData.devicemeta.update == true || false) {
+	// 		console.log('+++++ RUN MANUAL UPDATE NOW +++++');
+	// 		require('child_process').exec('cd ~/Documents/attitude && node manualupdate2.js && pm2 restart 0', function (msg) { console.log(msg) });
+	// 	} else if (newData.devicemeta.reboot == true || false) {
+	// 		console.log('+++++ REBOOT & DELETE CONFIG FILE +++++');
+	// 		fs.rmSync('config.json', { recursive: true, force: true });
+
+	// 		if (!LAPTOP_MODE) {
+	// 			require('child_process').exec('sudo /sbin/shutdown now', function (msg) { console.log(msg) });
+	// 		}
+	// 	}
+	// }
 
 	// processSchedule(); // removed this here because process schedule is called in 1 second interval earlier
 }
