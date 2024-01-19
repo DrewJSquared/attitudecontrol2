@@ -94,6 +94,12 @@ AttitudeSense.initialize();
 
 // build shows patch from schedule
 function processSchedule() {
+	// ensure devicemeta is not undefined
+	if (typeof config.devicemeta == 'undefined') {
+		log.error('processSchedule', 'config.devicemeta is undefined! Unable to process timezone & device schedule. skipping...');
+		return;
+	}
+
 	// get current time in device config timezone
 	var timezoneString = config.devicemeta.timezone;
 	var local = DateTime.local();
