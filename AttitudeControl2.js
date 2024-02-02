@@ -455,8 +455,11 @@ function layerAnOverride(base, layer) {
 			}
 		// else new layer needs to run on the whole zone not just the groups
 		} else if (layer[z] > 0) {
+			console.log(layer[z]);
 			final[z] = JSON.parse(JSON.stringify(layer[z]));
 		}
+
+
 	}
 
 	console.log('layer an override final ' + JSON.stringify(final));
