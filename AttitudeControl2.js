@@ -306,6 +306,8 @@ function processSchedule() {
     // console.log('- showdata after overrides');
     // console.log(showdata);
 
+    log.info('Overrides', 'Showdata after overrides processing: ' + JSON.stringify(showdata));
+
     // do a JSON copy of showdata to make sure nothing is referenced but instead pure copied. Not sure if this is strictly necesary.
     var finalShowData = JSON.parse(JSON.stringify(showdata));
 
