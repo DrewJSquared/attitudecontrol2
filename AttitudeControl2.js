@@ -459,6 +459,8 @@ function layerAnOverride(base, layer) {
 		}
 	}
 
+	console.log('layer an override final ' + JSON.stringify(final));
+
 	return final;
 }
 
