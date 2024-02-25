@@ -295,18 +295,45 @@ function processSchedule() {
 
 
 
-
-
-
-
-
-
-
-
     // console.log('- showdata after overrides');
     // console.log(showdata);
 
     log.info('Overrides', 'Showdata after overrides processing: ' + JSON.stringify(showdata));
+
+
+
+
+
+
+
+
+    console.log(' ^^^^^^^ WEB BASED OVERRIDES ^^^^^^^^^ ');
+
+
+
+    // loop through each web override (in reverse order so override #1 is processed last)
+    for (var w = config.webOverrides.length-1; w >= 0; w--) {
+    	// console.log(config.webOverrides[w]);
+
+    	if (config.webOverrides[w].active) {
+    		// find the override object associated with this port
+    		var thisOverride = undefined;
+    		var foundIndex = config.overrides.findIndex(obj => obj.id == config.webOverrides[w].override_id);
+			if (foundIndex >= 0) {
+				thisOverride = JSON.parse(JSON.stringify(config.overrides[foundIndex]));
+			} else {
+				continue;
+			}
+
+    		showdata = layerAnOverride(showdata, JSON.parse(thisOverride.showsdata));
+    	}
+	}
+
+
+
+    log.info('Web Overrides', 'Showdata after WEB overrides processing: ' + JSON.stringify(showdata));
+
+
 
     // do a JSON copy of showdata to make sure nothing is referenced but instead pure copied. Not sure if this is strictly necesary.
     var finalShowData = JSON.parse(JSON.stringify(showdata));
@@ -361,7 +388,7 @@ function processSchedule() {
 
 
 	// log final showspatch
-	// console.log(' -------- showsPatch ------- ' + JSON.stringify(showsPatch).length);
+	console.log(' -------- showsPatch ------- ' + JSON.stringify(showsPatch).length);
 	// console.log(showsPatch);
 
 
@@ -455,10 +482,10 @@ function layerAnOverride(base, layer) {
 			}
 		// else new layer needs to run on the whole zone not just the groups
 		} else if (layer[z] > 0) {
-			console.log('z ' + z + ' set to layer' + layer[z]);
+			// console.log('z ' + z + ' set to layer' + layer[z]);
 			final[z] = JSON.parse(JSON.stringify(layer[z]));
 		} else {
-			console.log('z ' + z + ' set to base!' + base[z]);
+			// console.log('z ' + z + ' set to base!' + base[z]);
 			final[z] = JSON.parse(JSON.stringify(base[z]));
 		}
 

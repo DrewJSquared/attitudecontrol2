@@ -79,10 +79,11 @@ function engine() {
 		return;
 	}
 
+	// set everything to zeroes at very first for sake of any - Inactive - zones/groups
+	outputZerosToAllChannels();
 
+	// loop through each showsPatch
 	for (var s = 0; s < showsPatch.length; s++) {
-		// loop through each showsPatch
-
 		var showType = parseInt(showsPatch[s].show.type);
 		var colors = showsPatch[s].show.colorsList.length;
 		var speedRange = 101 - parseInt(showsPatch[s].show.speed); // 100 -> 1 range
