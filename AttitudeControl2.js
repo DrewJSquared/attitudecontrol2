@@ -162,19 +162,49 @@ function processSchedule() {
     // console.log(showdata);
 
 
+    // log the current showdata after processing custom show schedule
+    log.info('Schedule', 'Showdata pre custom shows: ' + JSON.stringify(showdata));
+
+
 
     // now check each Custom Show Schedule block
     for (var c = 0; c < config.customBlocks.length; c++) {
     	var thisBlock = config.customBlocks[c];
 
-    	// if this block is on today
-    	if (thisBlock.month == rezoned.month + 1 && thisBlock.day == offsetWeekdayForLuxon(rezoned.weekday)) {
+    	// check if this block should be today based on it either being an old single day block or a new multi day block
+    	var thisBlockShouldBeToday = false;
+    	if (varExists(thisBlock.month) && varExists(thisBlock.day)) {
+    		if (thisBlock.month == rezoned.month && thisBlock.day == rezoned.day) {
+    			thisBlockShouldBeToday = true;
+				log.notice('Schedule', 'This is an old type of custom schedule block. Please rebuild this block.');
+    		}
+    	} else if (varExists(thisBlock.startMonth) && varExists(thisBlock.startDay) && varExists(thisBlock.endMonth) && varExists(thisBlock.endDay)) {
+    		startMonthDayStamp = thisBlock.startMonth * 100 + thisBlock.startDay;
+    		endMonthDayStamp = thisBlock.endMonth * 100 + thisBlock.endDay;
+    		currentMonthDayStamp = rezoned.month * 100 + rezoned.day;
+
+    		// console.log('currentMonthDayStamp ' + currentMonthDayStamp + ' startMonthDayStamp ' + startMonthDayStamp + ' endMonthDayStamp ' + endMonthDayStamp);
+
+    		if (endMonthDayStamp > startMonthDayStamp && currentMonthDayStamp > startMonthDayStamp && currentMonthDayStamp < endMonthDayStamp) {
+    			thisBlockShouldBeToday = true;
+    		} else if (endMonthDayStamp < startMonthDayStamp && (currentMonthDayStamp > startMonthDayStamp || currentMonthDayStamp < endMonthDayStamp)) {
+    			thisBlockShouldBeToday = true;
+    			log.info('Schedule', 'This schedule block wraps around the new year.')
+    		}
+    	}
+
+    	// if this block should be today based on previous calculations
+    	if (thisBlockShouldBeToday) {
+    			// console.log('---- THIS CUSTOM BLOCK IS TODAY')
+
     		var currentTimeNumber = (rezoned.hour * 60) + rezoned.minute;
     		var thisBlockStartNumber = (thisBlock.startHour * 60) + thisBlock.startMinute;
     		var thisBlockEndNumber = (thisBlock.endHour * 60) + thisBlock.endMinute;
 
     		// if the current time is within this block
     		if (currentTimeNumber >= thisBlockStartNumber && currentTimeNumber < thisBlockEndNumber) {
+    			// console.log('---- THIS CUSTOM BLOCK IS ACTIVE')
+
     			// go thru each zone of the showdata for this block and update the main showData variable
     			for (var z = 0; z < thisBlock.showdata.length; z++) {
     				// check if there are groups in this override
@@ -787,4 +817,8 @@ function fullDebugTimeString() {
 
 function offsetWeekdayForLuxon(luxonWeekday) {
 	return (luxonWeekday % 7 + 1);
+}
+
+function varExists(foo) {
+	return (typeof foo !== 'undefined');
 }
