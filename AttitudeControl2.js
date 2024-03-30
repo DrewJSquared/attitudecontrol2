@@ -185,9 +185,9 @@ function processSchedule() {
 
     		// console.log('currentMonthDayStamp ' + currentMonthDayStamp + ' startMonthDayStamp ' + startMonthDayStamp + ' endMonthDayStamp ' + endMonthDayStamp);
 
-    		if (endMonthDayStamp >= startMonthDayStamp && currentMonthDayStamp >= startMonthDayStamp && currentMonthDayStamp =< endMonthDayStamp) {
+    		if (endMonthDayStamp >= startMonthDayStamp && currentMonthDayStamp >= startMonthDayStamp && currentMonthDayStamp <= endMonthDayStamp) {
     			thisBlockShouldBeToday = true;
-    		} else if (endMonthDayStamp < startMonthDayStamp && (currentMonthDayStamp >= startMonthDayStamp || currentMonthDayStamp =< endMonthDayStamp)) {
+    		} else if (endMonthDayStamp < startMonthDayStamp && (currentMonthDayStamp >= startMonthDayStamp || currentMonthDayStamp <= endMonthDayStamp)) {
     			thisBlockShouldBeToday = true;
     			log.info('Schedule', 'This schedule block wraps around the new year.')
     		}
