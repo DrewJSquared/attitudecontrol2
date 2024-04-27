@@ -7,8 +7,11 @@
 // ==================== VARIABLES ====================
 var DEVICE_ID = 0;
 var SERIALNUMBER = 'AC-00100XX';
+
 const LAPTOP_MODE = (process.platform == 'darwin');
 const SERVER_PING_INTERVAL = 1000;
+const SCHEDULE_UPDATE_INTERVAL = 100;
+
 var config = {};
 var showsPatch = [];
 var notAssignedToLocation = false;
@@ -60,7 +63,7 @@ AttitudeEngine.updateShowsPatch(showsPatch);
 
 AttitudeEngine.startEngine();
 
-setInterval(() => processSchedule(), 1000); // always process schedule every 1 second regardless of internet or not
+setInterval(() => processSchedule(), SCHEDULE_UPDATE_INTERVAL); // always process schedule every interval regardless of network
 
 
 
@@ -129,13 +132,7 @@ function processSchedule() {
     		// if it's within the current time
     		if (thisBlock.start - 1 <= rezoned.hour && thisBlock.start - 1 + thisBlock.height > rezoned.hour) {
     			currentEventBlockId = thisBlock.eventBlockId;
-				// log.notice('DEBUG', '     H ' + rezoned.hour + '  evntBlckId ' + currentEventBlockId + '  start ' + (thisBlock.start - 1) + '  end ' + (thisBlock.start - 1 + thisBlock.height));
     		}
-
-    		// use minutes instead of hours, temp for debugging
-    		// if (thisBlock.start - 1 <= (currentTime.getMinutes() - 20) && thisBlock.start - 1 + thisBlock.height > (currentTime.getMinutes() - 20)) {
-    		// 	currentEventBlockId = thisBlock.eventBlockId;
-    		// }
     	}
     }
 
@@ -157,17 +154,14 @@ function processSchedule() {
     	}
     }
 
-    // log the current showdata variable (which includes the shows from the current scheduled block only)
-    // console.log('- showdata pre custom');
-    // console.log(showdata);
 
 
-    // log the current showdata after processing custom show schedule
-    log.info('Schedule', 'Showdata pre custom shows: ' + JSON.stringify(showdata));
+    // log the current showdata after processing the weekly show schedule
+    log.info('Schedule', 'Showdata after processing standard weekly schedule:  ' + JSON.stringify(showdata));
 
 
 
-    // now check each Custom Show Schedule block
+    // now process each Custom Show Schedule block
     for (var c = 0; c < config.customBlocks.length; c++) {
     	var thisBlock = config.customBlocks[c];
 
@@ -251,17 +245,11 @@ function processSchedule() {
 
 
     // log the current showdata after processing custom show schedule
-    log.info('Schedule', 'Processed weekly & custom show schedule. Shows: ' + JSON.stringify(showdata));
+    log.info('Schedule', 'Showdata after processing custom show schedule:      ' + JSON.stringify(showdata));
 
 
 
-
-    // NOW it's finally time to incoroporate overrides
-    console.log(' ^^^^^^^ OVERRIDES ^^^^^^^^^ ');
-
-    // console.log(config.senses);
-
-    // console.log(AttitudeSense.getSenseData(1));
+    // Process Attitude Sense overrides
 
     // loop through each sense
     for (var s = 0; s < config.senses.length; s++) {
@@ -276,7 +264,7 @@ function processSchedule() {
     	var thisSensePortsArray = JSON.parse('[' + thisSenseCurrentData.DATA + ']');
 
     	for (var p = 0; p < 16; p++) {
-    		console.log(thisSense.data[p]);
+    		// console.log(thisSense.data[p]);
 
 
 
@@ -306,38 +294,18 @@ function processSchedule() {
 
     	}
 
-    	console.log(thisSensePortsArray);
+    	// console.log(thisSensePortsArray);
     	// console.log(thisSense.data);
     }
 
+    // log showdata after processing attitude sense overrides
+    log.info('Schedule', 'Showdata after processing Attitude Sense overrides:  ' + JSON.stringify(showdata));
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-    // console.log('- showdata after overrides');
-    // console.log(showdata);
-
-    log.info('Overrides', 'Showdata after overrides processing: ' + JSON.stringify(showdata));
-
-
-
-
-
-
-
-
-    console.log(' ^^^^^^^ WEB BASED OVERRIDES ^^^^^^^^^ ');
 
 
 
@@ -359,18 +327,14 @@ function processSchedule() {
     	}
 	}
 
-
-
-    log.info('Web Overrides', 'Showdata after WEB overrides processing: ' + JSON.stringify(showdata));
+	// log the schedule after processing web overrides
+    log.info('Schedule', 'Showdata after processing web activated overrides:   ' + JSON.stringify(showdata));
 
 
 
     // do a JSON copy of showdata to make sure nothing is referenced but instead pure copied. Not sure if this is strictly necesary.
     var finalShowData = JSON.parse(JSON.stringify(showdata));
 
-    // log finalShowData variable after copy
-    // console.log('- finalShowData:');
-    // console.log(finalShowData);
 
 
 
@@ -418,14 +382,7 @@ function processSchedule() {
 
 
 	// log final showspatch
-	console.log(' -------- showsPatch ------- ' + JSON.stringify(showsPatch).length);
-	// console.log(showsPatch);
-
-
-	// log.info showsPatch data
-	// for (var i = 0; i < showsPatch.length; i++) {
-	// 	log.info('showsPatch', showsPatch[i].fixtures.length + ' fixtures playing show ' + JSON.stringify(showsPatch[i].show));
-	// }
+    log.info('ShowsPatch', 'Final showspatch length: ' + JSON.stringify(showsPatch).length);
 
 
 	// send showspatch data to engine for shows to be processed and spit out to DMX
@@ -522,7 +479,7 @@ function layerAnOverride(base, layer) {
 
 	}
 
-	console.log('layer an override final ' + JSON.stringify(final));
+	// console.log('layer an override final ' + JSON.stringify(final));
 
 	return final;
 }
@@ -578,7 +535,7 @@ function getData(allData = false) {
 	if (allData || tryingForAllData) {
 		type = '/data';
 		tryingForAllData = true;
-		log.info('HTTPS', 'Attempting to load a fresh set of data from the attitude.lighting server.')
+		log.http('Server', 'Attempting to load a fresh set of data from the attitude.lighting server.')
 	}
 
 	https.get(url + DEVICE_ID + type, resp => {
@@ -595,7 +552,7 @@ function getData(allData = false) {
 			if (data.length > 5 && tryingForAllData) {
 				tryingForAllData = false;
 
-				log.info('HTTPS', 'Successfully pulled a complete fresh set of data from the attitude.lighting server.')
+				log.http('Server', 'Successfully pulled a complete fresh set of data from the attitude.lighting server.')
 			}
 			parseNewHTTPSData(data);
 		});
