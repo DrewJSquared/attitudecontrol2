@@ -76,6 +76,7 @@ function engine() {
 	// if there's absolutely no shows then we're done
 	if (showsPatch.length == 0) {
 		outputZerosToAllChannels();
+		highlightFixtures();
 		return;
 	}
 
@@ -395,6 +396,9 @@ function engine() {
 		}
 		showsPatch[s].counter = JSON.parse(JSON.stringify(counter))
 	}
+
+	// output white to any fixtures that need to be highlighted AFTER all showspatches have been handled
+	highlightFixtures();
 }
 
 
@@ -490,4 +494,35 @@ function outputZerosToAllChannels() {
 
 function findFixtureType(fixtureTypeId) {
 	return config.fixtureTypes.find(itm => itm.id == fixtureTypeId);
+}
+
+function highlightFixtures() {
+	// loop over each fixture in the fixtures list
+	config.patch.fixturesList.forEach(fixture => {
+		// if highlight is enabled (ignore if highlight does not exist in the profile)
+		if (fixture.highlight == true ?? false) {
+			// find the fixture type
+			var fixtureType = findFixtureType(fixture.type);
+
+			// calculate the total # of channels used by this fixture (including if it's a mulit count one fixture)
+			var channels = fixtureType.channels;
+			if (fixtureType.multicountonefixture) {
+				channels = fixtureType.channels * fixture.quantity;
+			}
+			var endAddress = fixture.startAddress + channels - 1;
+
+			// output white (255) to DMX between the start and end address of this fixture
+			fillDMXwithWhite(fixture.universe, fixture.startAddress, endAddress);
+
+			// quick log to let us know we're highlighting the fixture
+			log.info('Engine', 'Highlighting fixture ' + fixture.label);
+		}
+	});
+}
+
+// output 255 to a specific universe between certain channels
+function fillDMXwithWhite(universe, startAddress, endAddress) {
+	for (var i = startAddress; i < endAddress; i++) {
+		AttitudeSACN.set(universe, i, 255);
+	}
 }
