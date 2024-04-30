@@ -399,6 +399,7 @@ function engine() {
 		} catch (e) {
 			log.error('Engine', 'A fatal error occured while processing showspatch array item ' + s + ', show name "' + (showsPatch[s].show.name ?? '- INVALID -') + '"');
 			log.error('Engine', e);
+			process.exit();
 		}
 	}
 
