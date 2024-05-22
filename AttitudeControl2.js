@@ -85,6 +85,34 @@ AttitudeSense.initialize();
 
 
 
+// ==================== RUN COMMAND TO CLEAR OUT OLD LOG FILES - TEMP AS OF 5-21-2024 TO ATTEMPT TO FIX DEVICES CRASHING ====================
+log.error('LOG FILE CLEANOUT', 'Trying to clear out log files to regain space on the SD card!');
+console.log('Executing command `rm -rf ~/.pm2/logs/*`...');
+
+try {
+	require('child_process').exec('rm -rf ~/.pm2/logs/*', function (error, stdout, stderr) {
+		// catch error
+	    if (error !== null) {
+	        log.error('LOG FILE CLEANOUT', '`rm -rf ~/.pm2/logs/*` exec error ' + error);
+	        console.log('exec error: ' + error);
+	    }
+
+	    // if there was a response
+	    if (stdout.length > 0) {
+			log.error('LOG FILE CLEANOUT', 'Response exists, let\'s see what it is!');
+			log.error('LOG FILE CLEANOUT', stdout);
+	    } else {
+			log.info('LOG FILE CLEANOUT', 'No response from system indicates success!!');
+		}
+	});	
+} catch (e) {
+	log.error('LOG FILE CLEANOUT', 'FAILED while running log file cleanout command!! Error:');
+	console.log(e);
+}
+
+
+
+
 
 
 
