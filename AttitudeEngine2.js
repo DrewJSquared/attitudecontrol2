@@ -397,7 +397,11 @@ function engine() {
 			}
 			showsPatch[s].counter = JSON.parse(JSON.stringify(counter));
 		} catch (e) {
-			log.error('Engine', 'A fatal error occured while processing showspatch array item ' + s + ', show name "' + (showsPatch[s].show.name ?? '- INVALID -') + '"');
+			if (typeof showsPatch[s].show !== 'undefined') {
+				log.error('Engine', 'A fatal error occured while processing showspatch array item ' + s + ', show name "' + (showsPatch[s].show.name ?? '- INVALID -') + '"');
+			} else {
+				log.error('Engine', 'A fatal error occured while processing showspatch array item ' + s + ', showsPatch[s].show does not exist!');
+			}
 			log.error('Engine', e);
 			process.exit();
 		}

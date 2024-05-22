@@ -18,6 +18,8 @@ var notAssignedToLocation = false;
 
 var tryingForAllData = false;
 
+var PROCESS_SCHEDULE_LOGGING = false;
+
 
 
 
@@ -107,7 +109,7 @@ function processSchedule() {
 	var timezoneString = config.devicemeta.timezone;
 	var local = DateTime.local();
 	var rezoned = local.setZone(timezoneString);
-	log.info('Schedule', 'Current time (rezoned) in ' + timezoneString + ' is ' + rezoned.toFormat("ccc LLL d yyyy H:mm:ss 'GMT'ZZ (ZZZZZ)"));
+	if (PROCESS_SCHEDULE_LOGGING) { log.info('Schedule', 'Current time (rezoned) in ' + timezoneString + ' is ' + rezoned.toFormat("ccc LLL d yyyy H:mm:ss 'GMT'ZZ (ZZZZZ)")); }
 
 
 	// if not assigned or no schedule, exit
@@ -157,7 +159,7 @@ function processSchedule() {
 
 
     // log the current showdata after processing the weekly show schedule
-    log.info('Schedule', 'Showdata after processing standard weekly schedule:  ' + JSON.stringify(showdata));
+    if (PROCESS_SCHEDULE_LOGGING) { log.info('Schedule', 'Showdata after processing standard weekly schedule:  ' + JSON.stringify(showdata)); }
 
 
 
@@ -245,7 +247,7 @@ function processSchedule() {
 
 
     // log the current showdata after processing custom show schedule
-    log.info('Schedule', 'Showdata after processing custom show schedule:      ' + JSON.stringify(showdata));
+    if (PROCESS_SCHEDULE_LOGGING) { log.info('Schedule', 'Showdata after processing custom show schedule:      ' + JSON.stringify(showdata)); }
 
 
 
@@ -299,7 +301,7 @@ function processSchedule() {
     }
 
     // log showdata after processing attitude sense overrides
-    log.info('Schedule', 'Showdata after processing Attitude Sense overrides:  ' + JSON.stringify(showdata));
+    if (PROCESS_SCHEDULE_LOGGING) { log.info('Schedule', 'Showdata after processing Attitude Sense overrides:  ' + JSON.stringify(showdata)); }
 
 
 
@@ -328,7 +330,7 @@ function processSchedule() {
 	}
 
 	// log the schedule after processing web overrides
-    log.info('Schedule', 'Showdata after processing web activated overrides:   ' + JSON.stringify(showdata));
+    if (PROCESS_SCHEDULE_LOGGING) { log.info('Schedule', 'Showdata after processing web activated overrides:   ' + JSON.stringify(showdata)); }
 
 
 
@@ -382,7 +384,7 @@ function processSchedule() {
 
 
 	// log final showspatch
-    log.info('ShowsPatch', 'Final showspatch length: ' + JSON.stringify(showsPatch).length);
+    if (PROCESS_SCHEDULE_LOGGING) { log.info('ShowsPatch', 'Final showspatch length: ' + JSON.stringify(showsPatch).length); }
 
 
 	// send showspatch data to engine for shows to be processed and spit out to DMX
