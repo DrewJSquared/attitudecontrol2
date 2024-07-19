@@ -20,6 +20,8 @@ var tryingForAllData = false;
 
 var PROCESS_SCHEDULE_LOGGING = false;
 
+var updateToFirmware2AInProgress = false;
+
 
 
 
@@ -29,6 +31,7 @@ const fs = require('fs');
 const https = require("https");
 var Moment = require('moment-timezone');
 const { DateTime } = require("luxon");
+const { exec } = require('child_process');
 
 
 
@@ -149,6 +152,37 @@ function processSchedule() {
 
 		return;
 	}
+
+
+	// UPDATE TO 2.A HERE!
+	console.log(config.updateToFirmware2A ?? false);
+	if (config.updateToFirmware2A ?? false) {
+		// make sure we aren't already updating
+		if (!updateToFirmware2AInProgress) {
+			updateToFirmware2AInProgress = true;
+
+	        // Command to run the update
+	        const command = './install2a.sh';
+
+	        // Execute the command
+	        exec(command, (error, stdout, stderr) => {
+	            if (error) {
+	            	console.log(error);
+	            } else {
+	            	console.log('Success!');
+
+	                // get the results string from running the update
+	                const lines = stdout.split('\n');
+	                const results = lines[lines.length - 2].trim();
+
+	            	console.log(results);
+	            }
+	        });	
+	    }
+    }
+
+
+
 
 
 	// figure out what event block is currently active based on time and schedule
