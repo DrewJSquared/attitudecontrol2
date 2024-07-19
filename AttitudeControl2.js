@@ -155,7 +155,7 @@ function processSchedule() {
 
 
 	// UPDATE TO 2.A HERE!
-	console.log(config.updateToFirmware2A ?? false);
+	// console.log(config.updateToFirmware2A ?? false);
 	if (config.updateToFirmware2A ?? false) {
 		// make sure we aren't already updating
 		if (!updateToFirmware2AInProgress) {
