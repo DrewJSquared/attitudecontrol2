@@ -185,6 +185,7 @@ function processSchedule() {
     // if an update is already in progress, don't continue processing the schedule.
     // this resolves the flickering issues during the 2.A update process
     if (updateToFirmware2AInProgress ?? false) {
+    	AttitudeSACN.stopUpdatingWhileOutputting();
     	return;
     }
 

@@ -27,6 +27,8 @@ var DMX_INTERVAL_SPEED = 24;  // 24ms = 40x per second (using 24 per testing)
 var DEBUG_FPS = true;
 var fps = 0;
 
+var STOP_OUTPUTTING_WHILE_UPDATING = false;
+
 
 
 
@@ -76,6 +78,10 @@ module.exports = {
 		dmxinterval = setInterval(() => {
 			fps++;
 
+			if (STOP_OUTPUTTING_WHILE_UPDATING) {
+				return;
+			}
+
 			// send regular universes
 			for (var u = 0; u < UNIVERSES; u++) {
 				// send over sACN
@@ -100,4 +106,8 @@ module.exports = {
 			}
 		}
 	},
+
+	stopUpdatingWhileOutputting() {
+		STOP_OUTPUTTING_WHILE_UPDATING = true;
+	}
 };
